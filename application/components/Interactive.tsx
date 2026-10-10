@@ -58,6 +58,7 @@ export function WelcomePopup({ code, label }: { code: string; label: string }) {
     <Modal onClose={() => setOpen(false)} label="Offre de bienvenue">
       <img className="modal-hero" src="/gallery/g00.jpg" alt="" />
       <div className="modal-body">
+        <img src="/gallery/logo-sd.png" alt="" width={64} height={64} style={{ borderRadius: "50%", marginTop: -56, border: "4px solid var(--paper)", boxShadow: "var(--shadow-sm)" }} />
         <div className="eyebrow">Première visite</div>
         <div className="h2" style={{ fontSize: "2.2rem" }}>{label || "Une attention pour votre première pose"}</div>
         <p className="muted" style={{ margin: 0 }}>Utilisez ce code au moment de réserver.</p>

@@ -14,10 +14,7 @@ export function InvoiceView({ inv }: { inv: Invoice }) {
       </div>
       <article className="invoice step-anim">
         <header className="inv-head">
-          <div>
-            <div className="mono-mark" style={{ fontSize: "2.2rem" }}>SD</div>
-            <div className="mono-word">Beauty Glam</div>
-          </div>
+          <img src="/gallery/logo-sd.png" alt="SD Beauty Glam" width={96} height={96} style={{ borderRadius: "50%", boxShadow: "0 0 0 1px var(--line)" }} />
           <div style={{ textAlign: "right" }}>
             <div className="eyebrow">Facture</div>
             <div className="h2" style={{ fontSize: "1.8rem" }}>{inv.no}</div>

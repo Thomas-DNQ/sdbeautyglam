@@ -440,3 +440,7 @@ button.chip { font: inherit; color: inherit; cursor: pointer; }
   .invoice { border: 0; box-shadow: none; padding: 0; }
   .invoice-wrap { padding: 0; }
 }
+
+/* Logo de la marque */
+.mono-logo { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px var(--line); flex: none; }
+.mono-word { font-weight: 500; }

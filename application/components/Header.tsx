@@ -3,8 +3,8 @@ import Link from "next/link";
 export function Monogram() {
   return (
     <Link href="/" className="mono" aria-label="SD Beauty Glam, accueil">
-      <span className="mono-mark">SD</span>
-      <span className="mono-word">Beauty<br />Glam</span>
+      <img className="mono-logo" src="/gallery/logo-sd.png" alt="" width={44} height={44} />
+      <span className="mono-word">SD Beauty<br />Glam</span>
     </Link>
   );
 }
