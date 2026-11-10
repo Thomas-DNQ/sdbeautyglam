@@ -16,7 +16,7 @@ export function InvoiceView({ inv }: { inv: Invoice }) {
         <header className="inv-head">
           <img src="/gallery/logo-sd.png" alt="SD Beauty Glam" width={96} height={96} style={{ borderRadius: "50%", boxShadow: "0 0 0 1px var(--line)" }} />
           <div style={{ textAlign: "right" }}>
-            <div className="eyebrow">Facture</div>
+            <div className="eyebrow">Reçu de paiement</div>
             <div className="h2" style={{ fontSize: "1.8rem" }}>{inv.no}</div>
             <div className="small muted">Émise le {fmtDate(inv.date)}</div>
           </div>
@@ -25,7 +25,7 @@ export function InvoiceView({ inv }: { inv: Invoice }) {
           <div>
             <div className="eyebrow">Émetteur</div>
             <b>{inv.seller.name}</b>
-            <div className="small">{inv.seller.legal}</div>
+            {inv.seller.legal && <div className="small">{inv.seller.legal}</div>}
             <div className="small">{inv.seller.address}</div>
             {inv.seller.siret && <div className="small">SIRET {inv.seller.siret}</div>}
             {inv.seller.email && <div className="small">{inv.seller.email}</div>}
@@ -46,14 +46,14 @@ export function InvoiceView({ inv }: { inv: Invoice }) {
           </table>
         </div>
         <div className="inv-total">
-          <div className="recap-row total"><span>Total TTC</span><span className="num">{eur(inv.total)}</span></div>
+          <div className="recap-row total"><span>Total</span><span className="num">{eur(inv.total)}</span></div>
           {inv.paid_with_gift > 0 && <div className="recap-row"><span>Réglé par carte cadeau</span><span className="num">{eur(inv.paid_with_gift)}</span></div>}
           {inv.payments.map((p, i) => <div className="recap-row" key={i}><span>Réglé · {p.method}</span><span className="num">{eur(p.amount)}</span></div>)}
           <div className="recap-row"><span>Reste dû</span><b className="num">{eur(Math.max(0, inv.total - inv.paid_with_gift - paid))}</b></div>
         </div>
         <footer className="small muted" style={{ marginTop: 26, display: "grid", gap: 4 }}>
-          <div><b style={{ color: "var(--ink)" }}>{inv.seller.vat}</b></div>
-          <div>Facture acquittée. Pas d’escompte pour paiement anticipé.</div>
+          {inv.seller.vat && <div><b style={{ color: "var(--ink)" }}>{inv.seller.vat}</b></div>}
+          <div>Récapitulatif de paiement. Merci pour votre confiance !</div>
         </footer>
       </article>
     </main>

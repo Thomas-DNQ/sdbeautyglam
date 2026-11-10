@@ -66,8 +66,8 @@ export const MAILS = {
     html: layout(`Joyeux anniversaire ${name} !`, "Pour fêter ça, profitez de <b>−10 %</b> sur votre rendez-vous pendant tout le mois. La remise s’applique automatiquement à la réservation.", { label: "Me faire plaisir", url: `${siteUrl()}/reserver` }),
   }),
   invoice: (name: string, no: string, total: number, url: string, ref: string) => ({
-    key: `invoice-${no}`, kind: "Facture", subject: `Votre facture ${no} · ${BRAND.name}`,
-    html: layout("Merci pour votre confiance", `Vous trouverez votre facture <b>${no}</b> d’un montant de <b>${total} €</b>${ref ? ` (${esc(ref)})` : ""}.<br>Bonne journée ${esc(name)} !`, { label: "Voir ma facture", url }),
+    key: `invoice-${no}`, kind: "Reçu", subject: `Votre reçu ${no} · ${BRAND.name}`,
+    html: layout("Merci pour votre confiance", `Vous trouverez votre reçu <b>${no}</b> d’un montant de <b>${total} €</b>${ref ? ` (${esc(ref)})` : ""}.<br>Bonne journée ${esc(name)} !`, { label: "Voir mon reçu", url }),
   }),
   giftActive: (name: string, email: string, code: string, label: string, balance: number) => ({
     key: `gift-${code}`, kind: "Carte cadeau activée", subject: `Votre ${label} est activée 🎁`,

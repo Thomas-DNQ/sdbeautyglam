@@ -139,7 +139,7 @@ export function Confetti() {
     const ctx = c.getContext("2d"); if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
     c.width = innerWidth * dpr; c.height = innerHeight * dpr; ctx.scale(dpr, dpr);
-    const colors = ["#9b6b5a", "#e8d2c9", "#1f1a17", "#c69f8c", "#fffdfb"];
+    const colors = ["#7b2340", "#e9cdd3", "#2a1220", "#a8476a", "#fffbfb"];
     const parts = Array.from({ length: 120 }, () => ({
       x: innerWidth / 2 + (Math.random() - 0.5) * 120, y: innerHeight * 0.32, vx: (Math.random() - 0.5) * 12, vy: -Math.random() * 13 - 4,
       r: Math.random() * 6 + 3, a: Math.random() * Math.PI, va: (Math.random() - 0.5) * 0.3, c: colors[Math.floor(Math.random() * colors.length)],

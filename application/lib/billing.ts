@@ -1,4 +1,4 @@
-import { ADDONS, LENGTHS, SERVICES } from "./catalog";
+import { ADDONS, FEATURES, LENGTHS, SERVICES } from "./catalog";
 import { longDate } from "./dates";
 import { MAILS, sendMail, siteUrl } from "./mail";
 import {
@@ -97,7 +97,7 @@ export async function runAutomations(now = new Date()) {
       if (!hasNext && today >= due && today <= new Date(new Date(due).getTime() + 10 * 864e5).toISOString().slice(0, 10)) await go(MAILS.rebook(b), to);
     }
   }
-  if (s.auto_birthday) {
+  if (s.auto_birthday && FEATURES.birthday) {
     const month = Number(today.slice(5, 7));
     for (const c of clients) {
       const m = (c.birthday || "").match(/^(\d{1,2})[/.\-](\d{1,2})$/);

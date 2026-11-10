@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { CANCEL_HOURS } from "@/lib/catalog";
 import { addReview, getBooking, getSettings, listReviews, PAY_LABEL, updateBooking } from "@/lib/store";
 import { bookingDue } from "@/lib/billing";
 import { ONLINE_PAY } from "@/lib/stripe";
@@ -23,7 +24,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       payments: (b.payments || []).map((p) => ({ label: PAY_LABEL[p.method], amount: p.amount, at: p.at })), invoice: b.invoice || null, due: bookingDue(b),
     },
     online: ONLINE_PAY,
-    canCancel: (b.status === "pending" || b.status === "confirmed") && hoursUntil(b.date, b.time) >= 24,
+    canCancel: (b.status === "pending" || b.status === "confirmed") && hoursUntil(b.date, b.time) >= CANCEL_HOURS,
     deposit: { amount: s.deposit_amount, info: s.deposit_info },
     review: review ? { rating: review.rating, text: review.text } : null,
   });
@@ -34,8 +35,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (!b) return NextResponse.json({ error: "Rendez-vous introuvable." }, { status: 404 });
   const body = await req.json().catch(() => ({}));
   if (body.action === "cancel") {
-    if (!((b.status === "pending" || b.status === "confirmed") && hoursUntil(b.date, b.time) >= 24))
-      return NextResponse.json({ error: "L'annulation en ligne n'est plus possible à moins de 24 h. Contactez SD Beauty Glam directement." }, { status: 400 });
+    if (!((b.status === "pending" || b.status === "confirmed") && hoursUntil(b.date, b.time) >= CANCEL_HOURS))
+      return NextResponse.json({ error: "L'annulation en ligne n'est plus possible à moins de 48 h. Contactez SD Beauty Glam directement." }, { status: 400 });
     await updateBooking(b.id, { status: "cancelled", cancelled_by: "client" });
     return NextResponse.json({ ok: true });
   }

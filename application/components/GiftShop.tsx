@@ -97,7 +97,7 @@ export function GiftShop() {
             <div className="field"><label htmlFor="g-name">Votre prénom</label><input id="g-name" className="input" value={name} onChange={(e) => setName(e.target.value)} /></div>
             <div className="field"><label htmlFor="g-phone">Votre téléphone</label><input id="g-phone" className="input" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 12 34 56 78" /></div>
           </div>
-          <div className="field"><label htmlFor="g-email">Email · pour recevoir le code et la facture</label><input id="g-email" className="input" type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@email.fr" /></div>
+          <div className="field"><label htmlFor="g-email">Email · pour recevoir le code et le reçu</label><input id="g-email" className="input" type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@email.fr" /></div>
           {error && <p className="err">{error}</p>}
           <button className="btn block" type="submit" disabled={sending} style={{ marginTop: 8 }}>
             {sending ? "Envoi…" : kind === "card" ? `Commander la carte de ${value || 0} €` : `Commander le ${pack.name} · ${pack.pay} €`}

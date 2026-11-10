@@ -8,17 +8,35 @@ export const BRAND = {
   city: "Beauregard, Rennes (35)",
   instagram: "sdbeauty.glam",
   instagramUrl: "https://instagram.com/sdbeauty.glam",
+  // Phrase d'accueil (à remplacer par sa phrase exacte du formulaire)
+  welcome: "Des ongles qui tiennent, des détails qui se remarquent.",
 };
+
+// Options activées pour cette cliente (formulaire de personnalisation)
+export const FEATURES = {
+  promo: false,      // codes promo + pop-up de bienvenue
+  waitlist: false,   // liste d'attente
+  birthday: false,   // offre anniversaire
+  onlinePay: false,  // paiement en ligne (carte / Stripe)
+  invoices: false,   // factures micro-entreprise → reçus simples
+};
+export const MIN_NOTICE_HOURS = 24; // réservation au plus tard 24 h avant
+export const CANCEL_HOURS = 48;     // annulation gratuite jusqu'à 48 h avant
+export const SLOT_TIMES = ["10:00", "12:30", "15:30", "16:00", "18:00", "19:00"]; // 7 j / 7
+export const PAYMENT_METHODS = ["especes", "virement"] as const;
 
 export type Service = {
   id: string;
-  cat: "mains" | "pieds" | "depose";
+  cat: "mains" | "pieds" | "regard" | "depose";
   name: string;
   detail?: string;
   price: number;
   minutes: number;
   lengthApplies?: boolean;
+  onRequest?: boolean; // tarif confirmé par SD (pas encore fixé)
 };
+
+export const priceLabel = (s: { price: number; onRequest?: boolean }) => (s.onRequest ? "Sur demande" : `${s.price} €`);
 
 export const SERVICES: Service[] = [
   { id: "gainage", cat: "mains", name: "Gainage / renfort", detail: "Sur ongle naturel, couleur unie", price: 30, minutes: 90 },
@@ -29,6 +47,8 @@ export const SERVICES: Service[] = [
   { id: "pieds", cat: "pieds", name: "Beauté des pieds", price: 25, minutes: 45 },
   { id: "pieds-art", cat: "pieds", name: "Pieds French, couleur unie, strass", price: 30, minutes: 60 },
   { id: "pieds-carre", cat: "pieds", name: "Pieds rallongement forme carrée", price: 35, minutes: 75 },
+  { id: "pedicure", cat: "pieds", name: "Pédicure", detail: "Soin complet des pieds, tarif confirmé avant le RDV", price: 0, minutes: 60, onRequest: true },
+  { id: "browlift", cat: "regard", name: "Brow lift", detail: "Rehaussement des sourcils, tarif confirmé avant le RDV", price: 0, minutes: 60, onRequest: true },
   { id: "depose", cat: "depose", name: "Dépose seule", detail: "Uniquement poses réalisées chez SD Beauty Glam", price: 15, minutes: 30 },
 ];
 
@@ -90,7 +110,9 @@ export const LOYALTY = {
 export const POLICIES = [
   "Envoyez une photo d'inspiration : le tarif est confirmé selon le modèle choisi, avant le rendez-vous.",
   "Je ne réalise pas de dépose de poses faites ailleurs.",
-  "Annulation ou report gratuit jusqu'à 24 h avant, depuis votre lien de rendez-vous.",
+  "Réservation au plus tard 24 h avant le rendez-vous.",
+  "Acompte de 10 € pour valider le créneau, réglé par virement ou en espèces.",
+  "Annulation ou report gratuit jusqu'à 48 h avant, depuis votre lien de rendez-vous.",
 ];
 
 export type Promo = { code: string; kind: "percent" | "amount"; value: number; label: string; starts: string; ends: string; active: boolean; public: boolean; uses: number; max_uses: number };
@@ -108,7 +130,7 @@ export function computeEstimate(opts: {
 }) {
   const lines: { label: string; amount: number; kind?: "discount" | "payment" }[] = [];
   const chosen = SERVICES.filter((s) => opts.services.includes(s.id));
-  for (const s of chosen) lines.push({ label: s.name, amount: s.price });
+  for (const s of chosen) lines.push({ label: s.onRequest ? `${s.name} (tarif sur demande)` : s.name, amount: s.price });
   const main = chosen.find((s) => s.cat === "mains");
   if (main?.lengthApplies && opts.length) {
     const l = LENGTHS.find((x) => x.id === opts.length);
@@ -125,8 +147,8 @@ export function computeEstimate(opts: {
   const hasFeet = chosen.some((s) => s.cat === "pieds");
   if (main && hasFeet) disc("Formule duo mains + pieds", DUO_DISCOUNT);
   if (opts.flashDiscount) disc("Créneau flash", opts.flashDiscount);
-  if (opts.birthday) disc(`Mois d'anniversaire −${BIRTHDAY_PERCENT} %`, Math.round((subtotal * BIRTHDAY_PERCENT) / 100));
-  if (opts.promo) disc(`Code ${opts.promo.code}`, opts.promo.kind === "percent" ? Math.round((subtotal * opts.promo.value) / 100) : opts.promo.value);
+  if (opts.birthday && FEATURES.birthday) disc(`Mois d'anniversaire −${BIRTHDAY_PERCENT} %`, Math.round((subtotal * BIRTHDAY_PERCENT) / 100));
+  if (opts.promo && FEATURES.promo) disc(`Code ${opts.promo.code}`, opts.promo.kind === "percent" ? Math.round((subtotal * opts.promo.value) / 100) : opts.promo.value);
   if (opts.referral) disc("Code parrainage", LOYALTY.referralDiscount);
   if (opts.loyaltyDiscount) disc("Récompense fidélité", opts.loyaltyDiscount);
   const total = Math.max(0, lines.reduce((t, l) => t + l.amount, 0));

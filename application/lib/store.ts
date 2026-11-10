@@ -1,5 +1,6 @@
 import postgres from "postgres";
 import type { Promo } from "./catalog";
+import { SLOT_TIMES } from "./catalog";
 
 // ─────────────── Types ───────────────
 export type Slot = { id: string; date: string; time: string; taken: boolean; flash: number };
@@ -42,21 +43,21 @@ export type Settings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  deposit_amount: 0,
-  deposit_info: "Acompte par Lydia, PayPal ou virement. Les coordonnées vous sont envoyées par message.",
+  deposit_amount: 10,
+  deposit_info: "Acompte de 10 € par virement ou en espèces pour valider le créneau. Les coordonnées vous sont envoyées par message.",
   banner: "",
   owner_whatsapp: process.env.NEXT_PUBLIC_OWNER_WHATSAPP || "",
-  payment_info: "Règlement par Lydia, PayPal, virement ou espèces. La carte est activée dès réception du paiement.",
+  payment_info: "Règlement par virement ou en espèces. La carte est activée dès réception du paiement.",
   popup_code: "",
   business_name: "SD Beauty Glam",
-  legal_form: "Entrepreneur individuel (micro-entreprise)",
+  legal_form: "",
   siret: "",
   address: "Beauregard, 35000 Rennes",
   contact_email: "",
-  vat_mention: "TVA non applicable, art. 293 B du CGI",
+  vat_mention: "",
   urssaf_rate: 21.2, cfp_rate: 0.3, vl_enabled: false, vl_rate: 1.7,
   vat_threshold: 37500, ca_ceiling: 77700,
-  auto_reminder: true, auto_review: true, auto_rebook: true, auto_birthday: true, rebook_days: 21,
+  auto_reminder: true, auto_review: true, auto_rebook: true, auto_birthday: false, rebook_days: 21,
 };
 
 type Coll = "slots" | "bookings" | "clients" | "gifts" | "promos" | "waitlist" | "reviews" | "photos" | "settings" | "invoices" | "expenses" | "mails" | "counters";
@@ -295,7 +296,7 @@ export async function nextInvoiceNo(year: string) {
   const c = (await get<{ n: number }>("counters", "inv-" + year)) || { n: 0 };
   const n = c.n + 1;
   await put("counters", "inv-" + year, { n });
-  return `FA-${year}-${String(n).padStart(4, "0")}`;
+  return `RE-${year}-${String(n).padStart(4, "0")}`;
 }
 export async function saveInvoice(inv: Invoice) { await put("invoices", inv.id, inv); }
 export async function getInvoice(id: string) { return get<Invoice>("invoices", id); }
@@ -312,45 +313,44 @@ export async function saveClient(c: Client) { await put("clients", c.phone, c); 
 // ─────────────── Données de démo (mode sans base) ───────────────
 function seedDemo(m: Map<string, Map<string, unknown>>) {
   const set = (c: Coll, id: string, v: unknown) => { if (!m.has(c)) m.set(c, new Map()); m.get(c)!.set(id, v); };
-  const week: [string, string[]][] = [
-    ["2026-10-12", ["15:30", "18:30"]], ["2026-10-15", ["15:30", "18:30"]], ["2026-10-17", ["15:30", "18:30"]],
-    ["2026-10-18", ["10:00", "12:30", "15:30"]], ["2026-10-19", ["15:30", "18:30"]], ["2026-10-21", ["15:30"]], ["2026-10-24", ["10:00", "15:30"]],
-  ];
-  const flashes: Record<string, number> = { "2026-10-15_18:30": 5, "2026-10-21_15:30": 5 };
-  for (const [date, times] of week) for (const time of times) { const id = `${date}_${time}`; set("slots", id, { id, date, time, taken: false, flash: flashes[id] || 0 }); }
+  // Créneaux 7 j / 7 aux horaires de SD, sur les 3 prochaines semaines
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const dayAt = (n: number) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return iso(d); };
+  const flashes: Record<string, number> = { [`${dayAt(3)}_19:00`]: 5, [`${dayAt(5)}_10:00`]: 5 };
+  for (let n = 1; n <= 21; n++) for (const time of SLOT_TIMES) {
+    if ((n * 7 + time.length + Number(time.slice(0, 2))) % 4 === 0) continue; // quelques créneaux déjà pris
+    const date = dayAt(n); const id = `${date}_${time}`; set("slots", id, { id, date, time, taken: false, flash: flashes[id] || 0 });
+  }
   const base: Booking = {
     id: "", created_at: new Date().toISOString(), status: "pending", client_name: "", phone: "", instagram: "", services: [], shape: "", length: "", addons: [], design: "",
     estimate: 0, final_price: null, minutes: 120, slot_id: "", date: "", time: "", notes: "", has_photo: false, referral_used: null, reward_used: 0,
     promo_code: null, birthday: false, flash: 0, gift_code: null, gift_used: 0, deposit: "none",
   };
   const bk = (o: Partial<Booking>) => { const b = { ...base, id: uid(12), ...o }; set("bookings", b.id, b); const s = m.get("slots")?.get(b.slot_id) as Slot | undefined; if (s && b.status !== "done") s.taken = true; };
-  bk({ client_name: "Exemple · Inès", phone: "0600000001", instagram: "exemple_ines", email: "ines@exemple.fr", services: ["art2"], shape: "almond", length: "M", addons: ["soin"], estimate: 50, slot_id: "2026-10-12_15:30", date: "2026-10-12", time: "15:30", notes: "Chrome rose comme sur la photo" });
-  bk({ client_name: "Exemple · Maëva", phone: "0600000002", instagram: "exemple_maeva", email: "maeva@exemple.fr", services: ["rallongement", "pieds-art"], shape: "square", length: "L", estimate: 65, final_price: 65, slot_id: "2026-10-18_10:00", date: "2026-10-18", time: "10:00", status: "confirmed" });
-  bk({ client_name: "Exemple · Awa", phone: "0600000003", instagram: "exemple_awa", email: "awa@exemple.fr", services: ["art1"], shape: "coffin", length: "M", addons: ["strass"], estimate: 45, final_price: 45, slot_id: "2026-10-05_15:30", date: "2026-10-05", time: "15:30", status: "done", payments: [{ id: "p1", method: "especes", amount: 45, at: "2026-10-05T17:40:00.000Z" }], invoice: "invdemo0001" });
+  bk({ client_name: "Exemple · Inès", phone: "0600000001", instagram: "exemple_ines", email: "ines@exemple.fr", services: ["art2"], shape: "almond", length: "M", addons: ["soin"], estimate: 50, slot_id: `${dayAt(2)}_15:30`, date: dayAt(2), time: "15:30", notes: "Chrome rose comme sur la photo" });
+  bk({ client_name: "Exemple · Maëva", phone: "0600000002", instagram: "exemple_maeva", email: "maeva@exemple.fr", services: ["rallongement", "pieds-art"], shape: "square", length: "L", estimate: 65, final_price: 65, slot_id: `${dayAt(4)}_10:00`, date: dayAt(4), time: "10:00", status: "confirmed" });
+  bk({ client_name: "Exemple · Awa", phone: "0600000003", instagram: "exemple_awa", email: "awa@exemple.fr", services: ["art1"], shape: "coffin", length: "M", addons: ["strass"], estimate: 45, final_price: 45, slot_id: `${dayAt(-6)}_15:30`, date: dayAt(-6), time: "15:30", status: "done", payments: [{ id: "p1", method: "especes", amount: 45, at: `${dayAt(-6)}T17:40:00.000Z` }], invoice: "invdemo0001" });
   // Historique fictif pour illustrer la comptabilité
   const hist: [string, string, number, PayMethod][] = [
-    ["2026-07-04", "Exemple · Chloé", 40, "carte"], ["2026-07-12", "Exemple · Inès", 50, "especes"], ["2026-07-26", "Exemple · Maëva", 65, "lydia"],
-    ["2026-08-02", "Exemple · Awa", 45, "carte"], ["2026-08-09", "Exemple · Jade", 35, "especes"], ["2026-08-23", "Exemple · Sarah", 55, "en_ligne"], ["2026-08-30", "Exemple · Chloé", 45, "carte"],
-    ["2026-09-06", "Exemple · Inès", 50, "carte"], ["2026-09-13", "Exemple · Lina", 70, "en_ligne"], ["2026-09-20", "Exemple · Maëva", 40, "especes"], ["2026-09-27", "Exemple · Jade", 45, "lydia"],
+    [dayAt(-75), "Exemple · Chloé", 40, "virement"], [dayAt(-68), "Exemple · Inès", 50, "especes"], [dayAt(-61), "Exemple · Maëva", 65, "virement"],
+    [dayAt(-54), "Exemple · Awa", 45, "virement"], [dayAt(-47), "Exemple · Jade", 35, "especes"], [dayAt(-40), "Exemple · Sarah", 55, "virement"], [dayAt(-33), "Exemple · Chloé", 45, "virement"],
+    [dayAt(-27), "Exemple · Inès", 50, "virement"], [dayAt(-20), "Exemple · Lina", 70, "virement"], [dayAt(-13), "Exemple · Maëva", 40, "especes"], [dayAt(-9), "Exemple · Jade", 45, "virement"],
   ];
   hist.forEach(([date, name, amount, method], i) => bk({ client_name: name, phone: "06000001" + String(i).padStart(2, "0"), services: ["art1"], shape: "almond", length: "M", estimate: amount, final_price: amount, slot_id: `${date}_15:30`, date, time: "15:30", status: "done", payments: [{ id: "h" + i, method, amount, at: `${date}T17:00:00.000Z` }] }));
   const cl = (c: Partial<Client>) => set("clients", c.phone!, { instagram: "", birthday: "", created_at: new Date().toISOString(), ...c });
   cl({ phone: "0600000003", name: "Exemple · Awa", instagram: "exemple_awa", stamps: 6, referral_code: "AWA2481", birthday: "14/10", email: "awa@exemple.fr" });
   cl({ phone: "0600000002", name: "Exemple · Maëva", instagram: "exemple_maeva", stamps: 2, referral_code: "MAEVA7310" });
   cl({ phone: "0600000001", name: "Exemple · Inès", instagram: "exemple_ines", stamps: 0, referral_code: "INES5521" });
-  set("promos", "HALLOWEEN", { code: "HALLOWEEN", kind: "percent", value: 10, label: "−10 % sur les poses de la semaine d'Halloween", starts: "2026-10-26", ends: "2026-11-01", active: true, public: true, uses: 0, max_uses: 0 });
-  set("promos", "BIENVENUE", { code: "BIENVENUE", kind: "amount", value: 5, label: "−5 € sur la première pose", starts: "", ends: "", active: true, public: false, uses: 3, max_uses: 50 });
   set("gifts", "SD-DEMO50", { code: "SD-DEMO50", kind: "card", label: "Carte cadeau 50 €", pay: 50, credit: 50, balance: 50, buyer_name: "Exemple · Léa", buyer_phone: "0600000009", recipient: "Sarah", message: "Joyeux anniversaire !", status: "active", created_at: new Date().toISOString() });
   set("gifts", "PACK-DEMO", { code: "PACK-DEMO", kind: "pack", label: "Pack Glam", pay: 110, credit: 120, balance: 120, buyer_name: "Exemple · Inès", buyer_phone: "0600000001", recipient: "", message: "", status: "pending", created_at: new Date().toISOString() });
-  set("settings", "main", { ...DEFAULT_SETTINGS, popup_code: "BIENVENUE", banner: "Halloween : −10 % du 26 octobre au 1er novembre avec le code HALLOWEEN" });
-  set("invoices", "invdemo0001", { id: "invdemo0001", no: "FA-2026-0001", date: "2026-10-05", ref: "", ref_kind: "booking", customer: { name: "Exemple · Awa", email: "awa@exemple.fr", phone: "0600000003" },
-    lines: [{ label: "Nail art niveau 1 · lundi 5 octobre", amount: 40 }, { label: "Strass & bijoux d'ongle sur 2 doigts", amount: 5 }], total: 45, paid_with_gift: 0, payments: [{ method: "Espèces", amount: 45 }],
-    seller: { name: "SD Beauty Glam", legal: DEFAULT_SETTINGS.legal_form, siret: "000 000 000 00000", address: DEFAULT_SETTINGS.address, email: "contact@exemple.fr", vat: DEFAULT_SETTINGS.vat_mention } });
+  set("settings", "main", { ...DEFAULT_SETTINGS, banner: "Nouveau : brow lift et pédicure disponibles à la réservation" });
+  set("invoices", "invdemo0001", { id: "invdemo0001", no: "RE-2026-0001", date: dayAt(-6), ref: "", ref_kind: "booking", customer: { name: "Exemple · Awa", email: "awa@exemple.fr", phone: "0600000003" },
+    lines: [{ label: "Nail art niveau 1", amount: 40 }, { label: "Strass & bijoux d'ongle sur 2 doigts", amount: 5 }], total: 45, paid_with_gift: 0, payments: [{ method: "Espèces", amount: 45 }],
+    seller: { name: "SD Beauty Glam", legal: DEFAULT_SETTINGS.legal_form, siret: "", address: DEFAULT_SETTINGS.address, email: "contact@exemple.fr", vat: DEFAULT_SETTINGS.vat_mention } });
   set("counters", "inv-2026", { n: 1 });
-  const ex: [string, string, string, number][] = [["2026-10-02", "Gels et top coat", "Produits", 64.9], ["2026-09-18", "Lampe UV/LED", "Matériel", 89], ["2026-09-03", "Capsules + limes", "Produits", 32.5], ["2026-08-11", "Publicité Instagram", "Marketing", 30]];
+  const ex: [string, string, string, number][] = [[dayAt(-10), "Gels et top coat", "Produits", 64.9], [dayAt(-24), "Lampe UV/LED", "Matériel", 89], [dayAt(-40), "Capsules + limes", "Produits", 32.5], [dayAt(-60), "Publicité Instagram", "Marketing", 30]];
   ex.forEach(([date, label, category, amount], i) => set("expenses", "e" + i, { id: "e" + i, date, label, category, amount }));
-  set("mails", "m1", { id: "m1", key: "invoice-FA-2026-0001", kind: "Facture", to: "awa@exemple.fr", subject: "Votre facture FA-2026-0001 · SD Beauty Glam", html: "<p>Exemple d'email de facture.</p>", at: "2026-10-05T17:41:00.000Z", status: "simulated" });
-  set("waitlist", "w1", { id: "w1", name: "Exemple · Jade", phone: "0600000010", wish: "Un samedi matin", created_at: new Date().toISOString(), status: "open" });
+  set("mails", "m1", { id: "m1", key: "invoice-RE-2026-0001", kind: "Reçu", to: "awa@exemple.fr", subject: "Votre reçu RE-2026-0001 · SD Beauty Glam", html: "<p>Exemple d'email de reçu.</p>", at: `${dayAt(-6)}T17:41:00.000Z`, status: "simulated" });
   set("reviews", "r1", { id: "r1", booking_id: "x1", name: "Exemple · Awa", rating: 5, text: "Pose ultra propre et qui tient 4 semaines. Je recommande les yeux fermés.", approved: true, created_at: new Date().toISOString() });
   set("reviews", "r2", { id: "r2", booking_id: "x2", name: "Exemple · Maëva", rating: 5, text: "Très à l'écoute, le rendu est exactement comme mon inspiration.", approved: true, created_at: new Date().toISOString() });
   set("reviews", "r3", { id: "r3", booking_id: "x3", name: "Exemple · Inès", rating: 4, text: "Super moment, je reviens pour le remplissage.", approved: false, created_at: new Date().toISOString() });

@@ -5,5 +5,5 @@ export const dynamic = "force-dynamic";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const inv = await getInvoice(params.id);
-  return inv ? NextResponse.json(inv) : NextResponse.json({ error: "Facture introuvable." }, { status: 404 });
+  return inv ? NextResponse.json(inv) : NextResponse.json({ error: "Reçu introuvable." }, { status: 404 });
 }

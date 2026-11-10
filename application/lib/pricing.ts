@@ -1,4 +1,4 @@
-import { computeEstimate, LOYALTY, SERVICES } from "./catalog";
+import { computeEstimate, FEATURES, LOYALTY, SERVICES } from "./catalog";
 import { findByReferral, getClient, getGift, listBookings, listSlots, normalizePhone, validPromo } from "./store";
 
 export type QuoteInput = {
@@ -24,7 +24,7 @@ export async function quote(i: QuoteInput) {
 
   // Code promo
   let promo = null;
-  if (i.promo?.trim()) {
+  if (FEATURES.promo && i.promo?.trim()) {
     promo = await validPromo(i.promo, date);
     if (!promo) notes.push("Ce code promo n'est pas valable pour cette date.");
   }
@@ -47,7 +47,7 @@ export async function quote(i: QuoteInput) {
   // Anniversaire : une fois par an, pendant le mois d'anniversaire
   const bMonth = birthMonth(i.birthday || client?.birthday || "");
   let birthday = false;
-  if (bMonth && Number(date.slice(5, 7)) === bMonth) {
+  if (FEATURES.birthday && bMonth && Number(date.slice(5, 7)) === bMonth) {
     const already = phone ? (await listBookings()).some((b) => b.phone === phone && b.birthday && b.status !== "cancelled" && b.date.slice(0, 4) === date.slice(0, 4)) : false;
     birthday = !already;
   }

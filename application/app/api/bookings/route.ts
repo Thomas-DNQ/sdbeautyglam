@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { DESIGNS, LOYALTY } from "@/lib/catalog";
+import { DESIGNS, LOYALTY, MIN_NOTICE_HOURS, SERVICES } from "@/lib/catalog";
 import { birthMonth, quote } from "@/lib/pricing";
 import { createBooking, getClient, getSettings, normalizePhone, upsertClient } from "@/lib/store";
 import { notifyNewBooking } from "@/lib/notify";
@@ -31,6 +31,9 @@ export async function POST(req: Request) {
   if (!q.est.lines.length) return NextResponse.json({ error: "Choisissez au moins une prestation." }, { status: 400 });
   if (!q.slot || q.slot.taken) return NextResponse.json({ error: "Ce créneau n'est plus disponible. Choisissez-en un autre." }, { status: 409 });
 
+  if (new Date(`${q.slot.date}T${q.slot.time}:00`).getTime() - Date.now() < MIN_NOTICE_HOURS * 36e5)
+    return NextResponse.json({ error: `Les réservations se font au plus tard ${MIN_NOTICE_HOURS} h avant. Choisissez un autre créneau.` }, { status: 409 });
+
   await upsertClient(name, phone, instagram, birthday, email);
   const settings = await getSettings();
 
@@ -39,7 +42,7 @@ export async function POST(req: Request) {
     addons: ((body.addons as string[]) || []).map(String), design, estimate: q.est.total, minutes: q.est.minutes,
     slot_id: q.slot.id, date: q.slot.date, time: q.slot.time, notes, has_photo: !!photo,
     referral_used: q.referral, reward_used: q.reward, promo_code: q.promo?.code || null, birthday: q.birthday, flash: q.slot.flash || 0,
-    gift_code: q.gift?.code || null, gift_used: q.est.giftUsed, deposit: settings.deposit_amount > 0 && q.est.toPay > 0 ? "due" : "none",
+    gift_code: q.gift?.code || null, gift_used: q.est.giftUsed, deposit: settings.deposit_amount > 0 && (q.est.toPay > 0 || SERVICES.some((s) => s.onRequest && q.est.lines.some((l) => l.label.startsWith(s.name)))) ? "due" : "none",
     email, payments: [], invoice: null,
   }, photo);
   if ("error" in res) return NextResponse.json(res, { status: 409 });

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Header } from "./Header";
 import { ShapeIcon } from "./ShapeIcon";
 import { DesignGallery, FlashNudge, RevealOnScroll, WelcomePopup } from "./Interactive";
-import { BIRTHDAY_PERCENT, BRAND, DUO_DISCOUNT, LENGTHS, LOYALTY, PACKS, POLICIES, SERVICES, SHAPES } from "@/lib/catalog";
+import { BIRTHDAY_PERCENT, BRAND, DUO_DISCOUNT, FEATURES, MIN_NOTICE_HOURS, LENGTHS, LOYALTY, PACKS, POLICIES, priceLabel, SERVICES, SHAPES } from "@/lib/catalog";
 import { getSettings, listPromos, listReviews, listSlots } from "@/lib/store";
 import { hour, longDate, todayISO } from "@/lib/dates";
 
@@ -12,9 +12,9 @@ export async function loadHome() {
   try {
     const today = todayISO();
     const [slots, promos, reviews, settings] = await Promise.all([listSlots(today), listPromos(), listReviews(true), getSettings()]);
-    const free = slots.filter((s) => !s.taken);
-    const publicPromos = promos.filter((p) => p.active && p.public && (!p.ends || p.ends >= today) && (!p.max_uses || p.uses < p.max_uses));
-    const popupPromo = settings.popup_code ? promos.find((p) => p.code === settings.popup_code && p.active) : undefined;
+    const free = slots.filter((s) => !s.taken && new Date(`${s.date}T${s.time}:00`).getTime() - Date.now() >= MIN_NOTICE_HOURS * 36e5);
+    const publicPromos = promos.filter((p) => FEATURES.promo && p.active && p.public && (!p.ends || p.ends >= today) && (!p.max_uses || p.uses < p.max_uses));
+    const popupPromo = FEATURES.promo && settings.popup_code ? promos.find((p) => p.code === settings.popup_code && p.active) : undefined;
     return { free, flash: free.filter((s) => s.flash > 0), publicPromos, reviews, settings, popupPromo };
   } catch {
     return { free: [], flash: [], publicPromos: [], reviews: [], settings: null, popupPromo: undefined };
@@ -32,12 +32,14 @@ export function HomeView({ free, flash, publicPromos, reviews, settings, popupPr
     settings?.banner,
     flash.length ? `Créneaux flash jusqu’à −${Math.max(...flash.map((f) => f.flash))} € cette semaine` : "",
     `Formule duo mains + pieds : −${DUO_DISCOUNT} €`,
-    `−${BIRTHDAY_PERCENT} % pendant votre mois d’anniversaire`,
+    FEATURES.birthday ? `−${BIRTHDAY_PERCENT} % pendant votre mois d’anniversaire` : "Nouveau : brow lift et pédicure",
+    `Carte de fidélité : ${LOYALTY.goal} tampons = 30 € offerts`,
     "Cartes cadeaux disponibles",
   ].filter(Boolean) as string[];
   const groups = [
     { title: "Pose complète", items: SERVICES.filter((s) => s.cat === "mains"), extra: [{ name: "Taille L", price: "+5" }, { name: "Taille XL", price: "+10" }] },
-    { title: "Pédicure", items: SERVICES.filter((s) => s.cat === "pieds"), extra: [] },
+    { title: "Pieds & pédicure", items: SERVICES.filter((s) => s.cat === "pieds"), extra: [] },
+    { title: "Sourcils", items: SERVICES.filter((s) => s.cat === "regard"), extra: [] },
     { title: "Dépose", items: SERVICES.filter((s) => s.cat === "depose"), extra: [{ name: "Dépose + nouvelle pose", price: "+10" }] },
   ];
 
@@ -58,7 +60,7 @@ export function HomeView({ free, flash, publicPromos, reviews, settings, popupPr
                 <span className="script">Vos ongles,</span>
                 signés SD.
               </h1>
-              <p className="lead rise d2">Gel, gainage et demi-capsules, du nude parfait au nail art 3D. Choisissez votre modèle, envoyez votre inspiration, réservez en deux minutes.</p>
+              <p className="lead rise d2"><em className="welcome">{BRAND.welcome}</em> Gel, gainage, nail art 3D, pédicure et brow lift. Choisissez votre modèle, envoyez votre inspiration, réservez en deux minutes.</p>
               <div className="hero-actions rise d3">
                 <Link className="btn" href="/reserver">Réserver mon rendez-vous</Link>
                 <a className="btn ghost" href="#modeles">Voir les modèles</a>
@@ -109,11 +111,13 @@ export function HomeView({ free, flash, publicPromos, reviews, settings, popupPr
                   <Link className="btn ghost sm" href={`/reserver?promo=${p.code}`}>En profiter</Link>
                 </div>
               ))}
-              <div className="offer-card reveal">
-                <div className="eyebrow">Anniversaire</div>
-                <div className="big">−{BIRTHDAY_PERCENT} %</div>
-                <p className="grow" style={{ margin: 0, color: "var(--ink-2)" }}>Indiquez votre date d’anniversaire à la réservation : la remise s’applique tout le mois.</p>
-              </div>
+              {FEATURES.birthday && (
+                <div className="offer-card reveal">
+                  <div className="eyebrow">Anniversaire</div>
+                  <div className="big">−{BIRTHDAY_PERCENT} %</div>
+                  <p className="grow" style={{ margin: 0, color: "var(--ink-2)" }}>Indiquez votre date d’anniversaire à la réservation : la remise s’applique tout le mois.</p>
+                </div>
+              )}
               <div className="offer-card reveal">
                 <div className="eyebrow">Duo mains + pieds</div>
                 <div className="big">−{DUO_DISCOUNT} €</div>
@@ -177,7 +181,7 @@ export function HomeView({ free, flash, publicPromos, reviews, settings, popupPr
                     <div className="menu-row" key={s.id}>
                       <div className="n">{s.name}{s.detail && <small>{s.detail}</small>}</div>
                       <div className="fill" />
-                      <div className="p">{s.price} €</div>
+                      <div className="p">{priceLabel(s)}</div>
                     </div>
                   ))}
                   {g.extra.map((e) => (

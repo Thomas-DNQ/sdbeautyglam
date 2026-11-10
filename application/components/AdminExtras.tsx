@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import qrcode from "qrcode-generator";
 import { Modal, openUrl } from "./Interactive";
 import { longDate } from "@/lib/dates";
+import { FEATURES, PAYMENT_METHODS } from "@/lib/catalog";
 
 export type Pay = { id: string; method: string; amount: number; at: string };
 export type ABooking = { id: string; client_name: string; date: string; time: string; status: string; estimate: number; final_price: number | null; gift_used: number; payments?: Pay[]; invoice?: string | null; services: string[]; email?: string; phone: string };
@@ -17,7 +18,9 @@ type Act = (body: Record<string, unknown>, msg?: string) => Promise<boolean>;
 const eur = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + " €";
 export const dueOf = (b: ABooking) => Math.max(0, (b.final_price ?? b.estimate) - b.gift_used - (b.payments || []).reduce((t, p) => t + p.amount, 0));
 
-const METHODS: [string, string][] = [["especes", "Espèces"], ["carte", "Carte (TPE)"], ["qr", "Carte via QR code"], ["lydia", "Lydia / PayPal"], ["virement", "Virement"]];
+const ALL_METHODS: [string, string][] = [["especes", "Espèces"], ["carte", "Carte (TPE)"], ["qr", "Carte via QR code"], ["lydia", "Lydia / PayPal"], ["virement", "Virement"]];
+// Moyens acceptés par SD (formulaire) : espèces + virement
+const METHODS = ALL_METHODS.filter(([m]) => (PAYMENT_METHODS as readonly string[]).includes(m) || (m === "qr" && FEATURES.onlinePay));
 
 function QR({ text }: { text: string }) {
   const svg = useMemo(() => { const q = qrcode(0, "M"); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); }, [text]);
@@ -44,7 +47,7 @@ export function PayModal({ b, act, online, onClose }: { b: ABooking; act: Act; o
       return;
     }
     if (total <= 0) { setErr("Indiquez un montant."); return; }
-    if (await act({ action: "pay", id: b.id, markDone, items: rows.map((r) => ({ method: r.method, amount: Number(r.amount.replace(",", ".")) || 0 })) }, total >= due ? "Encaissé · facture créée" : "Encaissement partiel noté")) onClose();
+    if (await act({ action: "pay", id: b.id, markDone, items: rows.map((r) => ({ method: r.method, amount: Number(r.amount.replace(",", ".")) || 0 })) }, total >= due ? "Encaissé · reçu créé" : "Encaissement partiel noté")) onClose();
   }
 
   return (
@@ -65,11 +68,11 @@ export function PayModal({ b, act, online, onClose }: { b: ABooking; act: Act; o
                 {r.method !== "qr" && <input className="input" inputMode="decimal" aria-label="Montant" value={r.amount} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, amount: e.target.value.replace(/[^\d,.]/g, "") } : x)))} />}
               </div>
             ))}
-            {!usesQr && <button type="button" className="link-btn" onClick={() => setRows([...rows, { method: "carte", amount: String(Math.max(0, due - total)) }])}>+ Payer avec un autre moyen (paiement en plusieurs fois)</button>}
+            {!usesQr && <button type="button" className="link-btn" onClick={() => setRows([...rows, { method: rows[0]?.method === "especes" ? "virement" : "especes", amount: String(Math.max(0, due - total)) }])}>+ Payer avec un autre moyen (paiement en plusieurs fois)</button>}
             {!usesQr && <label className="switch"><input type="checkbox" checked={markDone} onChange={(e) => setMarkDone(e.target.checked)} /> Marquer le RDV terminé (+1 tampon fidélité)</label>}
-            {usesQr && <p className="small muted" style={{ margin: 0 }}>Un QR code s’affiche : la cliente le scanne et paie par carte, Apple Pay ou Google Pay sur son téléphone. L’encaissement et la facture se font tout seuls.</p>}
+            {usesQr && <p className="small muted" style={{ margin: 0 }}>Un QR code s’affiche : la cliente le scanne et paie par carte, Apple Pay ou Google Pay sur son téléphone. L’encaissement et le reçu se font tout seuls.</p>}
             {err && <p className="err">{err}</p>}
-            <button className="btn block" onClick={submit}>{usesQr ? "Afficher le QR code" : `Encaisser ${eur(total)}${total >= due ? " et facturer" : ""}`}</button>
+            <button className="btn block" onClick={submit}>{usesQr ? "Afficher le QR code" : `Encaisser ${eur(total)}`}</button>
           </>
         ) : (
           <>
@@ -92,7 +95,7 @@ export function EmailsTab({ settings, setSettings, mails, act, live }: { setting
     ["auto_review", "Demande d’avis le lendemain", "Plus d’avis 5 étoiles sur le site"],
     ["auto_rebook", "Relance remplissage", `Si la cliente n’a pas repris RDV ${settings.rebook_days} jours après`],
     ["auto_birthday", "Email d’anniversaire −10 %", "Le mois de son anniversaire"],
-  ];
+  ].filter(([k]) => k !== "auto_birthday" || FEATURES.birthday) as [string, string, string][];
   return (
     <>
       <div className={live ? "demo-banner" : "demo-banner"} style={{ marginBottom: 14, background: live ? "color-mix(in srgb, var(--ok) 15%, transparent)" : undefined, color: live ? "var(--ok)" : undefined }}>
@@ -122,9 +125,9 @@ export function EmailsTab({ settings, setSettings, mails, act, live }: { setting
           <ul className="small" style={{ paddingLeft: 18, color: "var(--ink-2)", lineHeight: 1.9 }}>
             <li>Demande reçue (dès la réservation)</li>
             <li>Rendez-vous confirmé (quand vous confirmez)</li>
-            <li>Facture (dès que le RDV est réglé)</li>
-            <li>Carte cadeau activée + facture</li>
-            <li>Rappel J-1, avis, remplissage, anniversaire</li>
+            <li>Reçu de paiement (dès que le RDV est réglé)</li>
+            <li>Carte cadeau activée + reçu</li>
+            <li>Rappel J-1, avis, remplissage{FEATURES.birthday ? ", anniversaire" : ""}</li>
           </ul>
         </div>
       </div>
@@ -209,7 +212,7 @@ export function ComptaTab({ enabled, bookings, gifts, invoices, expenses, settin
   const label = period === "month" ? "ce mois" : period === "quarter" ? "ce trimestre" : "cette année";
 
   function exportCsv() {
-    const rows = [["Date", "N° facture", "Client", "Nature", "Mode de règlement", "Montant"], ...recettes.slice().reverse().map((r) => [r.date, r.no, r.client, r.nature, r.method, r.amount.toFixed(2).replace(".", ",")])];
+    const rows = [["Date", "N° reçu", "Client", "Nature", "Mode de règlement", "Montant"], ...recettes.slice().reverse().map((r) => [r.date, r.no, r.client, r.nature, r.method, r.amount.toFixed(2).replace(".", ",")])];
     const csv = "﻿" + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `livre-des-recettes-${y}.csv`; a.click();
   }
@@ -267,7 +270,7 @@ export function ComptaTab({ enabled, bookings, gifts, invoices, expenses, settin
       <div className="h3" style={{ margin: "26px 0 10px" }}>Livre des recettes</div>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Date</th><th>Facture</th><th>Client</th><th>Nature</th><th>Règlement</th><th style={{ textAlign: "right" }}>Montant</th></tr></thead>
+          <thead><tr><th>Date</th><th>Reçu</th><th>Client</th><th>Nature</th><th>Règlement</th><th style={{ textAlign: "right" }}>Montant</th></tr></thead>
           <tbody>
             {rec.map((r, i) => <tr key={i}><td className="num">{r.date.split("-").reverse().join("/")}</td><td>{r.no}</td><td>{r.client}</td><td>{r.nature}</td><td>{r.method}</td><td className="num" style={{ textAlign: "right" }}>{eur(r.amount)}</td></tr>)}
             {!rec.length && <tr><td colSpan={6} className="muted">Aucun encaissement sur la période.</td></tr>}
@@ -298,7 +301,7 @@ export function ComptaTab({ enabled, bookings, gifts, invoices, expenses, settin
   );
 }
 
-/** Réglages entreprise et fiscaux (pour les factures et la compta). */
+/** Réglages entreprise et fiscaux (pour les reçus et la compta). */
 export function BusinessSettings({ settings, setSettings }: { settings: ASettings; setSettings: (s: ASettings) => void }) {
   const f = (k: string, label: string, ph = "", type = "text") => (
     <div className="field" key={k}><label htmlFor={`set-${k}`}>{label}</label>
@@ -307,7 +310,7 @@ export function BusinessSettings({ settings, setSettings }: { settings: ASetting
   );
   return (
     <>
-      <div className="h3" style={{ margin: "8px 0 10px" }}>Entreprise (mentions sur les factures)</div>
+      <div className="h3" style={{ margin: "8px 0 10px" }}>Coordonnées (affichées sur les reçus)</div>
       <div className="field-row">{f("business_name", "Nom commercial")}{f("legal_form", "Statut", "Entrepreneur individuel (micro-entreprise)")}</div>
       <div className="field-row">{f("siret", "SIRET", "123 456 789 00012")}{f("contact_email", "Email de contact", "contact@…")}</div>
       {f("address", "Adresse")}

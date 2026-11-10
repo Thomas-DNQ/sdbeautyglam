@@ -1,10 +1,11 @@
 import crypto from "crypto";
 import { DEMO } from "./store";
 import { siteUrl } from "./mail";
+import { FEATURES } from "./catalog";
 
 // Paiement en ligne par carte via Stripe Checkout (STRIPE_SECRET_KEY). En démo, le paiement est simulé.
 export const STRIPE_LIVE = !!process.env.STRIPE_SECRET_KEY;
-export const ONLINE_PAY = STRIPE_LIVE || DEMO;
+export const ONLINE_PAY = FEATURES.onlinePay && (STRIPE_LIVE || DEMO);
 
 export async function createCheckout(o: { amount: number; label: string; kind: "booking" | "gift"; ref: string; email?: string; back: string }) {
   if (!STRIPE_LIVE) return { url: `/paiement?kind=${o.kind}&ref=${encodeURIComponent(o.ref)}&amount=${o.amount}&label=${encodeURIComponent(o.label)}&back=${encodeURIComponent(o.back)}` };

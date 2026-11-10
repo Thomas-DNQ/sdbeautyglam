@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ADDONS, BIRTHDAY_PERCENT, BRAND, computeEstimate, DESIGNS, DUO_DISCOUNT, formatDuration, LENGTHS, LOYALTY, POLICIES, SERVICES, SHAPES } from "@/lib/catalog";
+import { ADDONS, BIRTHDAY_PERCENT, BRAND, computeEstimate, DESIGNS, DUO_DISCOUNT, FEATURES, formatDuration, LENGTHS, LOYALTY, POLICIES, priceLabel, SERVICES, SHAPES } from "@/lib/catalog";
 import { ShapeIcon } from "./ShapeIcon";
 import { dayNum, dayShort, hour, longDate, monthShort } from "@/lib/dates";
 import { WaitlistForm } from "./WaitlistForm";
@@ -19,7 +19,7 @@ type Result = {
 };
 
 const STEP_TITLES: Record<string, [string, string]> = {
-  service: ["Votre prestation", "Choisissez ce que vous voulez faire. Vous pouvez combiner mains et pieds."],
+  service: ["Votre prestation", "Choisissez ce que vous voulez faire. Vous pouvez combiner mains, pieds et sourcils."],
   shape: ["Forme et longueur", "Pas sûre ? Choisissez la plus proche, on ajuste ensemble le jour J."],
   options: ["Les petits plus", "Des options pour sublimer votre pose."],
   inspo: ["Votre inspiration", "Une photo du modèle qui vous plaît permet de confirmer le tarif exact."],
@@ -43,6 +43,7 @@ export function BookingFlow() {
   const [main, setMain] = useState<string | null>(null);
   const [feet, setFeet] = useState<string | null>(null);
   const [depose, setDepose] = useState(false);
+  const [brow, setBrow] = useState(false);
   const [shape, setShape] = useState("");
   const [length, setLength] = useState("M");
   const [addons, setAddons] = useState<string[]>([]);
@@ -72,17 +73,20 @@ export function BookingFlow() {
     const d = DESIGNS.find((x) => x.id === p.get("design"));
     if (d) { setDesign(d.id); setMain(d.service); setShape(d.shape); setLength(d.length); }
     const s = p.get("service"); if (s && SERVICES.some((x) => x.id === s && x.cat === "mains")) setMain(s);
+    if (s === "browlift") setBrow(true);
+    if (s && SERVICES.some((x) => x.id === s && x.cat === "pieds")) setFeet(s);
     const sh = p.get("shape"); if (sh) setShape(sh);
     const l = p.get("length"); if (l) setLength(l);
     const r = p.get("code"); if (r) { setReferral(r.toUpperCase()); setShowCodes(true); }
-    const pr = p.get("promo"); if (pr) { setPromo(pr.toUpperCase()); setShowCodes(true); }
+    const pr = p.get("promo"); if (pr && FEATURES.promo) { setPromo(pr.toUpperCase()); setShowCodes(true); }
     const sl = p.get("slot"); if (sl) { setSlotId(sl); setDay(sl.split("_")[0]); }
     fetch("/api/slots").then((r) => r.json()).then((d) => setSlots(d.slots || [])).catch(() => setSlots([]));
   }, []);
 
-  const services = useMemo(() => [main, feet, depose ? "depose" : null].filter(Boolean) as string[], [main, feet, depose]);
+  const services = useMemo(() => [main, feet, brow ? "browlift" : null, depose ? "depose" : null].filter(Boolean) as string[], [main, feet, brow, depose]);
   const mainSvc = SERVICES.find((s) => s.id === main);
-  const steps = useMemo(() => ["service", ...(main ? ["shape"] : []), "options", "inspo", "slot", "info"], [main]);
+  const steps = useMemo(() => ["service", ...(main ? ["shape"] : []), ...(main || feet ? ["options"] : []), ...(main ? ["inspo"] : []), "slot", "info"], [main, feet]);
+  const onRequest = SERVICES.filter((s) => s.onRequest && services.includes(s.id));
   const cur = steps[Math.min(step, steps.length - 1)];
   const slot = (slots || []).find((s) => s.id === slotId);
   const local = computeEstimate({ services, length: mainSvc?.lengthApplies ? length : undefined, addons, flashDiscount: slot?.flash || 0 });
@@ -165,7 +169,7 @@ export function BookingFlow() {
                 <button key={s.id} type="button" className={`choice ${main === s.id ? "on" : ""}`} onClick={() => { setMain(main === s.id ? null : s.id); setDepose(false); }}>
                   <span className="tick" />
                   <span className="t"><b>{s.name}{s.id === "art2" && <span className="tag">Le plus demandé</span>}</b>{s.detail && <small>{s.detail}</small>}</span>
-                  <span className="pr">{s.price} €</span>
+                  <span className="pr">{priceLabel(s)}</span>
                 </button>
               ))}
             </div>
@@ -174,8 +178,18 @@ export function BookingFlow() {
               {SERVICES.filter((s) => s.cat === "pieds").map((s) => (
                 <button key={s.id} type="button" className={`choice ${feet === s.id ? "on" : ""}`} onClick={() => setFeet(feet === s.id ? null : s.id)}>
                   <span className="tick" />
-                  <span className="t"><b>{s.name}</b></span>
-                  <span className="pr">{s.price} €</span>
+                  <span className="t"><b>{s.name}</b>{s.detail && <small>{s.detail}</small>}</span>
+                  <span className="pr">{priceLabel(s)}</span>
+                </button>
+              ))}
+            </div>
+            <div className="eyebrow group-label">Sourcils</div>
+            <div className="choices">
+              {SERVICES.filter((s) => s.cat === "regard").map((s) => (
+                <button key={s.id} type="button" className={`choice ${brow ? "on" : ""}`} onClick={() => setBrow(!brow)}>
+                  <span className="tick" />
+                  <span className="t"><b>{s.name}<span className="tag">Nouveau</span></b>{s.detail && <small>{s.detail}</small>}</span>
+                  <span className="pr">{priceLabel(s)}</span>
                 </button>
               ))}
             </div>
@@ -185,7 +199,7 @@ export function BookingFlow() {
                 <button key={s.id} type="button" className={`choice ${depose ? "on" : ""}`} onClick={() => { setDepose(!depose); if (!depose) setMain(null); }}>
                   <span className="tick" />
                   <span className="t"><b>{s.name}</b><small>{s.detail}</small></span>
-                  <span className="pr">{s.price} €</span>
+                  <span className="pr">{priceLabel(s)}</span>
                 </button>
               ))}
             </div>
@@ -289,11 +303,15 @@ export function BookingFlow() {
                 <p className="muted small" style={{ marginTop: 14 }}>Durée estimée : {formatDuration(shown.minutes)}</p>
               </>
             )}
-            <div className="recap" style={{ marginTop: 24 }}>
-              <b>Aucun créneau ne vous convient ?</b>
-              <p className="muted small" style={{ margin: "4px 0 12px" }}>Inscrivez-vous sur la liste d’attente : vous êtes prévenue dès qu’une place se libère.</p>
-              <WaitlistForm />
-            </div>
+            {FEATURES.waitlist ? (
+              <div className="recap" style={{ marginTop: 24 }}>
+                <b>Aucun créneau ne vous convient ?</b>
+                <p className="muted small" style={{ margin: "4px 0 12px" }}>Inscrivez-vous sur la liste d’attente : vous êtes prévenue dès qu’une place se libère.</p>
+                <WaitlistForm />
+              </div>
+            ) : (
+              <p className="muted small" style={{ marginTop: 18 }}>Réservation au plus tard 24 h avant. Aucun créneau ne vous convient ? <a href={BRAND.instagramUrl} target="_blank" rel="noreferrer">Écrivez-moi sur Instagram</a>.</p>
+            )}
           </div>
         )}
 
@@ -314,7 +332,7 @@ export function BookingFlow() {
                 <input id="name" className="input" autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="field">
-                <label htmlFor="email">Email · confirmation, rappel et facture</label>
+                <label htmlFor="email">Email · confirmation, rappel et reçu</label>
                 <input id="email" className="input" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@email.fr" />
               </div>
             </div>
@@ -323,20 +341,24 @@ export function BookingFlow() {
                 <label htmlFor="insta">Instagram (facultatif)</label>
                 <input id="insta" className="input" value={insta} onChange={(e) => setInsta(e.target.value)} placeholder="@votrecompte" />
               </div>
-              <div className="field">
-                <label htmlFor="bday">Anniversaire (JJ/MM) · −{BIRTHDAY_PERCENT} % ce mois-là</label>
-                <input id="bday" className="input" inputMode="numeric" value={birthday} onChange={(e) => setBirthday(e.target.value.replace(/[^\d/]/g, "").slice(0, 5))} placeholder="14/03" />
-              </div>
+              {FEATURES.birthday && (
+                <div className="field">
+                  <label htmlFor="bday">Anniversaire (JJ/MM) · −{BIRTHDAY_PERCENT} % ce mois-là</label>
+                  <input id="bday" className="input" inputMode="numeric" value={birthday} onChange={(e) => setBirthday(e.target.value.replace(/[^\d/]/g, "").slice(0, 5))} placeholder="14/03" />
+                </div>
+              )}
             </div>
 
             {!showCodes ? (
-              <button type="button" className="link-btn" onClick={() => setShowCodes(true)}>J’ai un code promo, une carte cadeau ou un code parrainage</button>
+              <button type="button" className="link-btn" onClick={() => setShowCodes(true)}>{FEATURES.promo ? "J’ai un code promo, une carte cadeau ou un code parrainage" : "J’ai une carte cadeau ou un code parrainage"}</button>
             ) : (
               <div className="codes">
-                <div className="field">
-                  <label htmlFor="promo">Code promo</label>
-                  <input id="promo" className="input" value={promo} onChange={(e) => setPromo(e.target.value.toUpperCase())} placeholder="Ex : HALLOWEEN" />
-                </div>
+                {FEATURES.promo && (
+                  <div className="field">
+                    <label htmlFor="promo">Code promo</label>
+                    <input id="promo" className="input" value={promo} onChange={(e) => setPromo(e.target.value.toUpperCase())} placeholder="Ex : HALLOWEEN" />
+                  </div>
+                )}
                 <div className="field">
                   <label htmlFor="gift">Carte cadeau ou pack</label>
                   <input id="gift" className="input" value={giftCode} onChange={(e) => setGiftCode(e.target.value.toUpperCase())} placeholder="Ex : SD-XXXXXX" />
@@ -356,16 +378,16 @@ export function BookingFlow() {
               {slot && <div className="recap-row"><span>Rendez-vous</span><span>{longDate(slot.date)} · {hour(slot.time)}</span></div>}
               {shape && main && <div className="recap-row"><span>Forme</span><span>{SHAPES.find((s) => s.id === shape)?.name}{mainSvc?.lengthApplies ? ` · ${length}` : ""}</span></div>}
               {shown.lines.map((l) => (
-                <div className="recap-row" key={l.label}><span>{l.label}</span><span className={l.amount < 0 ? "neg num" : "num"}>{l.amount < 0 ? "−" : ""}{Math.abs(l.amount)} €</span></div>
+                <div className="recap-row" key={l.label}><span>{l.label}</span><span className={l.amount < 0 ? "neg num" : "num"}>{l.amount === 0 && l.label.includes("sur demande") ? "à confirmer" : `${l.amount < 0 ? "−" : ""}${Math.abs(l.amount)} €`}</span></div>
               ))}
-              <div className="recap-row total"><span>Total estimé</span><span className="num">{shown.total} €</span></div>
+              <div className="recap-row total"><span>Total estimé{onRequest.length && shown.total ? " (hors tarif sur demande)" : ""}</span><span className="num">{!shown.total && onRequest.length ? "Sur demande" : `${shown.total} €`}</span></div>
               {shown.giftUsed > 0 && (
                 <>
                   <div className="recap-row"><span>Payé avec la carte cadeau</span><span className="neg num">−{shown.giftUsed} €</span></div>
                   <div className="recap-row total"><span>Reste à régler</span><span className="num">{shown.toPay} €</span></div>
                 </>
               )}
-              <p className="muted small" style={{ margin: "8px 0 0" }}>{POLICIES[0]}</p>
+              <p className="muted small" style={{ margin: "8px 0 0" }}>{POLICIES[0]} Annulation gratuite jusqu’à 48 h avant.</p>
             </div>
           </div>
         )}
@@ -381,7 +403,7 @@ export function BookingFlow() {
           </div>
           <div style={{ textAlign: "right", flex: 1 }}>
             <div className="eyebrow" style={{ letterSpacing: ".16em" }}>{shown.giftUsed ? "Reste à régler" : "Estimation"}</div>
-            <div className="total num">{shown.giftUsed ? shown.toPay : shown.total} €</div>
+            <div className="total num">{!shown.total && onRequest.length ? "Sur demande" : `${shown.giftUsed ? shown.toPay : shown.total} €`}</div>
           </div>
           {isLast
             ? <button type="button" className="btn" disabled={!canNext || sending} onClick={submit}>{sending ? "Envoi…" : "Réserver"}</button>
@@ -420,14 +442,14 @@ function Confirmation({ result, name, main, shape, length, email }: { result: Re
         {email && <p className="small muted" style={{ marginTop: -6 }}>Un email de confirmation part à <b>{email}</b>.</p>}
         {b.deposit === "due" && result.deposit.amount > 0 && (
           <div className="upsell-hero" style={{ marginBottom: 14 }}>
-            <div className="t"><b>Acompte de {result.deposit.amount} € pour valider</b><br /><small>Réglez-le en ligne par carte en 30 secondes, ou {result.deposit.info.toLowerCase()}</small></div>
-            <button type="button" className="btn sm" onClick={async () => setPayErr((await startPayment({ ref: b.id, part: "deposit" })) || "")}>Payer</button>
+            <div className="t"><b>Acompte de {result.deposit.amount} € pour valider</b><br /><small>{FEATURES.onlinePay ? `Réglez-le en ligne par carte en 30 secondes, ou ${result.deposit.info.toLowerCase()}` : result.deposit.info}</small></div>
+            {FEATURES.onlinePay && <button type="button" className="btn sm" onClick={async () => setPayErr((await startPayment({ ref: b.id, part: "deposit" })) || "")}>Payer</button>}
           </div>
         )}
         {payErr && <p className="err">{payErr}</p>}
 
         <div className="recap">
-          <div className="recap-row"><span>Total estimé</span><b className="num">{b.estimate} €</b></div>
+          <div className="recap-row"><span>Total estimé</span><b className="num">{b.estimate ? `${b.estimate} €` : "Sur demande"}</b></div>
           {b.gift_used > 0 && <div className="recap-row"><span>Payé avec votre carte</span><span className="neg num">−{b.gift_used} €</span></div>}
           <div className="recap-row"><span>Durée</span><span>{formatDuration(b.minutes)}</span></div>
           {result.lines.filter((l) => l.amount < 0).map((l) => <div className="recap-row" key={l.label}><span>{l.label}</span><span className="neg">−{-l.amount} €</span></div>)}

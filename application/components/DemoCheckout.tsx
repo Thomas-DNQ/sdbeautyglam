@@ -40,7 +40,7 @@ export function DemoCheckout() {
           <>
             <div className="done-mark" aria-hidden="true" style={{ margin: "6px 0 14px" }}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
             <div className="h3">Paiement reçu, merci !</div>
-            <p className="muted small">{p.kind === "gift" ? "Votre carte est activée et le code vous est envoyé par email avec la facture." : "La facture vous est envoyée par email dès que le rendez-vous est réglé."}</p>
+            <p className="muted small">{p.kind === "gift" ? "Votre carte est activée et le code vous est envoyé par email avec le reçu." : "Le reçu vous est envoyé par email dès que le rendez-vous est réglé."}</p>
             <a className="btn block" href={p.back || "/"}>Continuer</a>
           </>
         )}

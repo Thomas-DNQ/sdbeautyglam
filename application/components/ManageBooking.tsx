@@ -59,14 +59,14 @@ export function ManageBooking({ id }: { id: string }) {
 
         {b.status !== "cancelled" && b.due > 0 && data.online && (
           <div className="upsell-hero light" style={{ marginTop: 14 }}>
-            <div className="t"><b>Payer en ligne par carte</b><br /><small>Carte, Apple Pay ou Google Pay. Votre facture arrive par email.</small></div>
+            <div className="t"><b>Payer en ligne par carte</b><br /><small>Carte, Apple Pay ou Google Pay. Votre reçu arrive par email.</small></div>
             <div className="btn-row">
               {b.deposit === "due" && data.deposit.amount > 0 && <button className="btn ghost sm" onClick={async () => setMsg((await startPayment({ ref: b.id, part: "deposit" })) || "")}>Acompte {Math.min(data.deposit.amount, b.due)} €</button>}
               <button className="btn sm" onClick={async () => setMsg((await startPayment({ ref: b.id, part: "full" })) || "")}>Payer {b.due} €</button>
             </div>
           </div>
         )}
-        {b.invoice && <p style={{ marginTop: 14 }}><Link className="btn ghost sm" href={`/facture/${b.invoice}`}>Voir ma facture</Link></p>}
+        {b.invoice && <p style={{ marginTop: 14 }}><Link className="btn ghost sm" href={`/facture/${b.invoice}`}>Voir mon reçu</Link></p>}
 
         {b.deposit === "due" && data.deposit.amount > 0 && b.status !== "cancelled" && !data.online && (
           <div className="upsell-hero" style={{ marginTop: 14 }}><div className="t"><b>Acompte de {data.deposit.amount} € à régler</b><br /><small>{data.deposit.info}</small></div></div>
@@ -78,7 +78,7 @@ export function ManageBooking({ id }: { id: string }) {
             <a className="btn sm" href={`/api/ics/${b.id}`}>Ajouter au calendrier</a>
             {data.canCancel
               ? <button className="btn ghost sm" onClick={() => setAsk(true)}>Annuler le rendez-vous</button>
-              : <span className="muted small">Moins de 24 h avant : contactez SD Beauty Glam pour toute modification.</span>}
+              : <span className="muted small">Moins de 48 h avant : contactez SD Beauty Glam pour toute modification.</span>}
           </div>
         )}
 

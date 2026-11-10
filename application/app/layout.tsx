@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: { title: "SD Beauty Glam", description: "Réservez votre pose d'ongles en ligne à Rennes.", images: ["/gallery/s2.jpg"] },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#f8f4f0" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#f8f1f2" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Monogram } from "./Header";
 import { Modal } from "./Interactive";
 import { BusinessSettings, ComptaTab, dueOf, EmailsTab, PayModal, type AExpense, type AInvoice, type AMail, type ASettings, type Pay } from "./AdminExtras";
-import { ADDONS, DESIGNS, LOYALTY, SERVICES, SHAPES, type Promo } from "@/lib/catalog";
+import { ADDONS, DESIGNS, FEATURES, LOYALTY, SERVICES, SHAPES, type Promo } from "@/lib/catalog";
 import { addDays, dayName, dayNum, hour, longDate, monthShort, todayISO } from "@/lib/dates";
 
 type Booking = {
@@ -191,7 +191,7 @@ export function AdminApp({ initiallyAuthed, demo }: { initiallyAuthed: boolean; 
               </>
             )}
             {(b.status === "confirmed" || b.status === "done") && dueOf(b) > 0 && <button className="btn sm" onClick={() => setPayFor(b)}>Encaisser {dueOf(b)} €</button>}
-            {b.invoice && <a className="btn ghost sm" href={`/facture/${b.invoice}`} target="_blank" rel="noreferrer">Facture</a>}
+            {b.invoice && <a className="btn ghost sm" href={`/facture/${b.invoice}`} target="_blank" rel="noreferrer">Reçu</a>}
             {b.status === "confirmed" && (
               <>
                 <button className="btn ghost sm" onClick={() => act({ action: "updateBooking", id: b.id, status: "done" }, "Terminé · tampon ajouté")}>Terminé +1 tampon</button>
@@ -211,7 +211,7 @@ export function AdminApp({ initiallyAuthed, demo }: { initiallyAuthed: boolean; 
 
   const tabs: [Tab, string, number][] = [
     ["home", "Aujourd’hui", 0], ["requests", "Demandes", pending.length], ["planning", "Planning", upcoming.length], ["slots", "Dispos", 0],
-    ["offers", "Offres", 0], ["shop", "Boutique", giftsPending.length], ["wait", "Attente", waitOpen.length], ["reviews", "Avis", reviewsPending.length],
+    ["offers", FEATURES.promo ? "Offres" : "Bandeau", 0], ["shop", "Boutique", giftsPending.length], ...(FEATURES.waitlist ? [["wait", "Attente", waitOpen.length] as [Tab, string, number]] : []), ["reviews", "Avis", reviewsPending.length],
     ["clients", "Clientes", 0], ["emails", "Emails", 0], ["compta", data?.features.compta ? "Comptabilité" : "Comptabilité 🔒", 0], ["settings", "Réglages", 0],
   ];
   const maxWeek = Math.max(1, ...stats.weeks.map((w) => w.value));
@@ -272,12 +272,12 @@ export function AdminApp({ initiallyAuthed, demo }: { initiallyAuthed: boolean; 
                     {[
                       [pending.length, "demande(s) à confirmer", "requests"],
                       [giftsPending.length, "carte(s) cadeau à activer", "shop"],
-                      [waitOpen.length, "personne(s) en liste d’attente", "wait"],
+                      ...(FEATURES.waitlist ? [[waitOpen.length, "personne(s) en liste d’attente", "wait"]] : []),
                       [reviewsPending.length, "avis à valider", "reviews"],
                     ].map(([n, l, t]) => (
                       <div className="row-line" key={String(t)}><span><b>{n}</b> {l}</span>{Number(n) > 0 && <button className="btn ghost sm" onClick={() => setTab(t as Tab)}>Voir</button>}</div>
                     ))}
-                    <div className="row-line"><span className="muted small">Cartes & packs vendus : {stats.giftsSold} € · {stats.promos} codes promo utilisés · {stats.referrals} parrainages</span></div>
+                    <div className="row-line"><span className="muted small">Cartes & packs vendus : {stats.giftsSold} €{FEATURES.promo ? ` · ${stats.promos} codes promo utilisés` : ""} · {stats.referrals} parrainages</span></div>
                   </div>
                 </div>
               </>
@@ -351,18 +351,19 @@ export function AdminApp({ initiallyAuthed, demo }: { initiallyAuthed: boolean; 
                   <div className="panel">
                     <div className="h3">Bandeau défilant</div>
                     <p className="muted small">Le message en haut du site (ex : offre du moment).</p>
-                    <input id="set-banner" className="input" value={settings.banner} onChange={(e) => setSettings({ ...settings, banner: e.target.value })} placeholder="Ex : −10 % toute la semaine avec le code NOEL10" />
+                    <input id="set-banner" className="input" value={settings.banner} onChange={(e) => setSettings({ ...settings, banner: e.target.value })} placeholder="Ex : Nouveau : brow lift disponible" />
                   </div>
-                  <div className="panel">
+                  {FEATURES.promo && <div className="panel">
                     <div className="h3">Pop-up de bienvenue</div>
                     <p className="muted small">Code affiché aux nouvelles visiteuses après quelques secondes. Laissez vide pour désactiver.</p>
                     <select id="set-popup" className="input" value={settings.popup_code} onChange={(e) => setSettings({ ...settings, popup_code: e.target.value })}>
                       <option value="">Désactivé</option>
                       {data.promos.map((p) => <option key={p.code} value={p.code}>{p.code} · {p.label || `−${p.value}${p.kind === "percent" ? " %" : " €"}`}</option>)}
                     </select>
-                  </div>
+                  </div>}
                 </div>
                 <button className="btn sm" onClick={() => act({ action: "settings", ...settings }, "Offres mises à jour")}>Enregistrer</button>
+                {FEATURES.promo && <>
 
                 <div className="section-head" style={{ marginTop: 32, marginBottom: 12 }}>
                   <div className="h3">Codes promo</div>
@@ -383,6 +384,7 @@ export function AdminApp({ initiallyAuthed, demo }: { initiallyAuthed: boolean; 
                     </div>
                   ))}
                 </div>
+                </>}
               </>
             )}
 
@@ -399,12 +401,12 @@ export function AdminApp({ initiallyAuthed, demo }: { initiallyAuthed: boolean; 
                       {g.status === "pending" && (
                         <>
                           <select className="input" style={{ width: "auto", padding: "8px 10px" }} aria-label="Moyen de paiement" value={giftMethod[g.code] || "especes"} onChange={(e) => setGiftMethod({ ...giftMethod, [g.code]: e.target.value })}>
-                            {Object.entries(data.methods).filter(([k]) => k !== "en_ligne").map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                            {Object.entries(data.methods).filter(([k]) => k === "especes" || k === "virement").map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                           </select>
-                          <button className="btn sm" onClick={() => act({ action: "activateGift", code: g.code, method: giftMethod[g.code] || "especes" }, "Carte activée · facture créée")}>Encaisser et activer</button>
+                          <button className="btn sm" onClick={() => act({ action: "activateGift", code: g.code, method: giftMethod[g.code] || "especes" }, "Carte activée · reçu créé")}>Encaisser et activer</button>
                         </>
                       )}
-                      {g.invoice && <a className="btn ghost sm" href={`/facture/${g.invoice}`} target="_blank" rel="noreferrer">Facture</a>}
+                      {g.invoice && <a className="btn ghost sm" href={`/facture/${g.invoice}`} target="_blank" rel="noreferrer">Reçu</a>}
                       {g.status === "active" && <a className="btn ghost sm" href={wa(g.buyer_phone, `Bonjour ${g.buyer_name} ! Votre ${g.label} SD Beauty Glam est activée 🎁 Code : ${g.code} · crédit ${g.balance} €. Réservez ici : ${origin}/reserver`)} target="_blank" rel="noreferrer">Envoyer le code</a>}
                       {g.status === "pending" && <button className="btn ghost sm" onClick={() => act({ action: "giftStatus", code: g.code, status: "cancelled" }, "Commande annulée")}>Annuler</button>}
                     </div>
@@ -447,11 +449,11 @@ export function AdminApp({ initiallyAuthed, demo }: { initiallyAuthed: boolean; 
             {tab === "clients" && (
               <div className="table-wrap">
                 <table>
-                  <thead><tr><th>Cliente</th><th>Téléphone</th><th>Instagram</th><th>Anniversaire</th><th>Tampons</th><th>Code</th><th></th></tr></thead>
+                  <thead><tr><th>Cliente</th><th>Téléphone</th><th>Instagram</th>{FEATURES.birthday && <th>Anniversaire</th>}<th>Tampons</th><th>Code</th><th></th></tr></thead>
                   <tbody>
                     {data.clients.map((c) => (
                       <tr key={c.phone}>
-                        <td>{c.name}</td><td className="num">{c.phone}</td><td>{c.instagram ? `@${c.instagram}` : "—"}</td><td>{c.birthday || "—"}</td>
+                        <td>{c.name}</td><td className="num">{c.phone}</td><td>{c.instagram ? `@${c.instagram}` : "—"}</td>{FEATURES.birthday && <td>{c.birthday || "—"}</td>}
                         <td className="num">{c.stamps} / {LOYALTY.goal}</td><td>{c.referral_code}</td>
                         <td><a className="btn ghost sm" href={wa(c.phone, `Bonjour ${c.name} ! `)} target="_blank" rel="noreferrer">Écrire</a></td>
                       </tr>
@@ -469,7 +471,7 @@ export function AdminApp({ initiallyAuthed, demo }: { initiallyAuthed: boolean; 
               <div className="panel" style={{ maxWidth: 720 }}>
                 <BusinessSettings settings={settings} setSettings={(x) => setSettings(x as Settings)} />
                 <div className="h3" style={{ margin: "18px 0 10px" }}>Paiements</div>
-                {!data.features.stripe && <p className="demo-banner small">Paiement par carte en ligne : {data.demo ? "simulé dans la démo." : "ajoutez la clé Stripe pour l’activer (voir le guide)."}</p>}
+                {FEATURES.onlinePay && !data.features.stripe && <p className="demo-banner small">Paiement par carte en ligne : {data.demo ? "simulé dans la démo." : "ajoutez la clé Stripe pour l’activer (voir le guide)."}</p>}
                 <div className="field"><label htmlFor="set-dep">Acompte demandé à la réservation (€, 0 = aucun)</label><input id="set-dep" className="input" inputMode="numeric" value={settings.deposit_amount} onChange={(e) => setSettings({ ...settings, deposit_amount: Number(e.target.value.replace(/\D/g, "")) || 0 })} /></div>
                 <div className="field"><label htmlFor="set-depinfo">Comment payer l’acompte</label><textarea id="set-depinfo" className="input" value={settings.deposit_info} onChange={(e) => setSettings({ ...settings, deposit_info: e.target.value })} /></div>
                 <div className="field"><label htmlFor="set-pay">Comment payer une carte cadeau ou un pack</label><textarea id="set-pay" className="input" value={settings.payment_info} onChange={(e) => setSettings({ ...settings, payment_info: e.target.value })} /></div>
