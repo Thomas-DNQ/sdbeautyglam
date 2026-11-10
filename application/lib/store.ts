@@ -343,7 +343,7 @@ function seedDemo(m: Map<string, Map<string, unknown>>) {
   cl({ phone: "0600000001", name: "Exemple · Inès", instagram: "exemple_ines", stamps: 0, referral_code: "INES5521" });
   set("gifts", "SD-DEMO50", { code: "SD-DEMO50", kind: "card", label: "Carte cadeau 50 €", pay: 50, credit: 50, balance: 50, buyer_name: "Exemple · Léa", buyer_phone: "0600000009", recipient: "Sarah", message: "Joyeux anniversaire !", status: "active", created_at: new Date().toISOString() });
   set("gifts", "PACK-DEMO", { code: "PACK-DEMO", kind: "pack", label: "Pack Glam", pay: 110, credit: 120, balance: 120, buyer_name: "Exemple · Inès", buyer_phone: "0600000001", recipient: "", message: "", status: "pending", created_at: new Date().toISOString() });
-  set("settings", "main", { ...DEFAULT_SETTINGS, banner: "Nouveau : brow lift et pédicure disponibles à la réservation" });
+  set("settings", "main", { ...DEFAULT_SETTINGS, banner: "Nouveau : brow lift dès 30 €, réservable en ligne" });
   set("invoices", "invdemo0001", { id: "invdemo0001", no: "RE-2026-0001", date: dayAt(-6), ref: "", ref_kind: "booking", customer: { name: "Exemple · Awa", email: "awa@exemple.fr", phone: "0600000003" },
     lines: [{ label: "Nail art niveau 1", amount: 40 }, { label: "Strass & bijoux d'ongle sur 2 doigts", amount: 5 }], total: 45, paid_with_gift: 0, payments: [{ method: "Espèces", amount: 45 }],
     seller: { name: "SD Beauty Glam", legal: DEFAULT_SETTINGS.legal_form, siret: "", address: DEFAULT_SETTINGS.address, email: "contact@exemple.fr", vat: DEFAULT_SETTINGS.vat_mention } });

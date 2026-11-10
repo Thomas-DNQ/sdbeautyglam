@@ -48,7 +48,11 @@ export const SERVICES: Service[] = [
   { id: "pieds-art", cat: "pieds", name: "Pieds French, couleur unie, strass", price: 30, minutes: 60 },
   { id: "pieds-carre", cat: "pieds", name: "Pieds rallongement forme carrée", price: 35, minutes: 75 },
   { id: "pedicure", cat: "pieds", name: "Pédicure", detail: "Soin complet des pieds, tarif confirmé avant le RDV", price: 0, minutes: 60, onRequest: true },
-  { id: "browlift", cat: "regard", name: "Brow lift", detail: "Rehaussement des sourcils, tarif confirmé avant le RDV", price: 0, minutes: 60, onRequest: true },
+  { id: "browlift", cat: "regard", name: "Brow lift seul", price: 30, minutes: 45 },
+  { id: "epil-teinture", cat: "regard", name: "Épilation + teinture", price: 35, minutes: 30 },
+  { id: "browlift-epil", cat: "regard", name: "Brow lift + épilation", price: 40, minutes: 60 },
+  { id: "browlift-deco", cat: "regard", name: "Brow lift + décoloration + teinture", price: 45, minutes: 75 },
+  { id: "browlift-epil-teinture", cat: "regard", name: "Brow lift + épilation + teinture", price: 45, minutes: 60 },
   { id: "depose", cat: "depose", name: "Dépose seule", detail: "Uniquement poses réalisées chez SD Beauty Glam", price: 15, minutes: 30 },
 ];
 

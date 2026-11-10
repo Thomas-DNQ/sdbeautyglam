@@ -32,7 +32,7 @@ export function HomeView({ free, flash, publicPromos, reviews, settings, popupPr
     settings?.banner,
     flash.length ? `Créneaux flash jusqu’à −${Math.max(...flash.map((f) => f.flash))} € cette semaine` : "",
     `Formule duo mains + pieds : −${DUO_DISCOUNT} €`,
-    FEATURES.birthday ? `−${BIRTHDAY_PERCENT} % pendant votre mois d’anniversaire` : "Nouveau : brow lift et pédicure",
+    FEATURES.birthday ? `−${BIRTHDAY_PERCENT} % pendant votre mois d’anniversaire` : "Nouveau : brow lift dès 30 €",
     `Carte de fidélité : ${LOYALTY.goal} tampons = 30 € offerts`,
     "Cartes cadeaux disponibles",
   ].filter(Boolean) as string[];
@@ -60,7 +60,7 @@ export function HomeView({ free, flash, publicPromos, reviews, settings, popupPr
                 <span className="script">Vos ongles,</span>
                 signés SD.
               </h1>
-              <p className="lead rise d2"><em className="welcome">{BRAND.welcome}</em> Gel, gainage, nail art 3D, pédicure et brow lift. Choisissez votre modèle, envoyez votre inspiration, réservez en deux minutes.</p>
+              <p className="lead rise d2"><em className="welcome">{BRAND.welcome}</em> Gel, gainage, nail art 3D, pédicure et brow lift dès 30 €. Choisissez votre modèle, envoyez votre inspiration, réservez en deux minutes.</p>
               <div className="hero-actions rise d3">
                 <Link className="btn" href="/reserver">Réserver mon rendez-vous</Link>
                 <a className="btn ghost" href="#modeles">Voir les modèles</a>

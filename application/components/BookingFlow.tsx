@@ -43,7 +43,7 @@ export function BookingFlow() {
   const [main, setMain] = useState<string | null>(null);
   const [feet, setFeet] = useState<string | null>(null);
   const [depose, setDepose] = useState(false);
-  const [brow, setBrow] = useState(false);
+  const [brow, setBrow] = useState<string | null>(null);
   const [shape, setShape] = useState("");
   const [length, setLength] = useState("M");
   const [addons, setAddons] = useState<string[]>([]);
@@ -73,7 +73,7 @@ export function BookingFlow() {
     const d = DESIGNS.find((x) => x.id === p.get("design"));
     if (d) { setDesign(d.id); setMain(d.service); setShape(d.shape); setLength(d.length); }
     const s = p.get("service"); if (s && SERVICES.some((x) => x.id === s && x.cat === "mains")) setMain(s);
-    if (s === "browlift") setBrow(true);
+    if (s && SERVICES.some((x) => x.id === s && x.cat === "regard")) setBrow(s);
     if (s && SERVICES.some((x) => x.id === s && x.cat === "pieds")) setFeet(s);
     const sh = p.get("shape"); if (sh) setShape(sh);
     const l = p.get("length"); if (l) setLength(l);
@@ -83,7 +83,7 @@ export function BookingFlow() {
     fetch("/api/slots").then((r) => r.json()).then((d) => setSlots(d.slots || [])).catch(() => setSlots([]));
   }, []);
 
-  const services = useMemo(() => [main, feet, brow ? "browlift" : null, depose ? "depose" : null].filter(Boolean) as string[], [main, feet, brow, depose]);
+  const services = useMemo(() => [main, feet, brow, depose ? "depose" : null].filter(Boolean) as string[], [main, feet, brow, depose]);
   const mainSvc = SERVICES.find((s) => s.id === main);
   const steps = useMemo(() => ["service", ...(main ? ["shape"] : []), ...(main || feet ? ["options"] : []), ...(main ? ["inspo"] : []), "slot", "info"], [main, feet]);
   const onRequest = SERVICES.filter((s) => s.onRequest && services.includes(s.id));
@@ -186,9 +186,9 @@ export function BookingFlow() {
             <div className="eyebrow group-label">Sourcils</div>
             <div className="choices">
               {SERVICES.filter((s) => s.cat === "regard").map((s) => (
-                <button key={s.id} type="button" className={`choice ${brow ? "on" : ""}`} onClick={() => setBrow(!brow)}>
+                <button key={s.id} type="button" className={`choice ${brow === s.id ? "on" : ""}`} onClick={() => setBrow(brow === s.id ? null : s.id)}>
                   <span className="tick" />
-                  <span className="t"><b>{s.name}<span className="tag">Nouveau</span></b>{s.detail && <small>{s.detail}</small>}</span>
+                  <span className="t"><b>{s.name}</b></span>
                   <span className="pr">{priceLabel(s)}</span>
                 </button>
               ))}
