@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000"),
   title: "SD Beauty Glam · Ongles Rennes",
   description: "Prothésiste ongulaire diplômée à Beauregard, Rennes. Gel, gainage, demi-capsules, nail art. Réservez en ligne.",
-  openGraph: { title: "SD Beauty Glam", description: "Réservez votre pose d'ongles en ligne à Rennes.", images: ["/gallery/s2.jpg"] },
+  openGraph: { title: "SD Beauty Glam", description: "Réservez votre pose d'ongles en ligne à Rennes.", images: ["/gallery/p06.jpg"] },
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#f8f1f2" };

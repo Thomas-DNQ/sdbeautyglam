@@ -56,7 +56,7 @@ export function WelcomePopup({ code, label }: { code: string; label: string }) {
   if (!open) return null;
   return (
     <Modal onClose={() => setOpen(false)} label="Offre de bienvenue">
-      <img className="modal-hero" src="/gallery/g00.jpg" alt="" />
+      <img className="modal-hero" src="/gallery/p02.jpg" alt="" />
       <div className="modal-body">
         <img src="/gallery/logo-sd.png" alt="" width={64} height={64} style={{ borderRadius: "50%", marginTop: -56, border: "4px solid var(--paper)", boxShadow: "var(--shadow-sm)" }} />
         <div className="eyebrow">Première visite</div>
@@ -83,7 +83,7 @@ export function FlashNudge({ slot }: { slot: { id: string; date: string; time: s
   if (!show || !slot) return null;
   return (
     <div className="nudge" role="status">
-      <img src="/gallery/g10.jpg" alt="" />
+      <img src="/gallery/p08.jpg" alt="" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="eyebrow" style={{ color: "var(--bronze)" }}>Créneau flash · −{slot.flash} €</div>
         <div className="small"><b>{longDate(slot.date)} à {hour(slot.time)}</b></div>

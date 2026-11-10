@@ -447,3 +447,5 @@ button.chip { font: inherit; color: inherit; cursor: pointer; }
 
 /* Personnalisation SD : phrase d’accueil */
 .hero p.lead .welcome { display: block; font-family: var(--display); font-style: italic; font-size: 1.5rem; line-height: 1.25; color: var(--bronze); margin-bottom: 10px; }
+.design-card { display: flex; flex-direction: column; justify-content: flex-start; }
+.design-card .row > :last-child { white-space: nowrap; }

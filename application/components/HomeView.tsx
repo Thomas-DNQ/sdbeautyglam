@@ -6,7 +6,7 @@ import { BIRTHDAY_PERCENT, BRAND, DUO_DISCOUNT, FEATURES, MIN_NOTICE_HOURS, LENG
 import { getSettings, listPromos, listReviews, listSlots } from "@/lib/store";
 import { hour, longDate, todayISO } from "@/lib/dates";
 
-const GALLERY = ["s2", "g00", "g11", "g01", "g10", "g12", "s1", "g02"];
+const GALLERY = ["p06", "p02", "p04", "p07", "p01", "p03", "p08", "p05", "p09"];
 
 export async function loadHome() {
   try {
@@ -78,8 +78,8 @@ export function HomeView({ free, flash, publicPromos, reviews, settings, popupPr
               </div>
             </div>
             <div className="hero-photos rise d2">
-              <img className="p1" src="/gallery/s2.jpg" alt="Pose nude et rouge avec fleurs, réalisée par SD Beauty Glam" />
-              <img className="p2" src="/gallery/g00.jpg" alt="French blanche amande avec strass" />
+              <img className="p1" src="/gallery/p06.jpg" alt="Pose amande, effet pierre précieuse vert et doré, réalisée par SD Beauty Glam" />
+              <img className="p2" src="/gallery/p04.jpg" alt="Ongles courts bordeaux à pois blancs" />
               <div className="stamp-badge"><span><b>{LOYALTY.goal}</b>tampons<br />= 30 € offerts</span></div>
             </div>
           </div>

@@ -78,13 +78,14 @@ export const ADDONS = [
 
 // Modèles signature : la cliente choisit un modèle, la réservation est pré-remplie
 export const DESIGNS = [
-  { id: "rouge-fleurs", name: "Rouge Bloom", img: "/gallery/s2.jpg", service: "art3", shape: "square", length: "M", tags: ["Fleurs 3D", "Best-seller"] },
-  { id: "french-strass", name: "French Diamant", img: "/gallery/g00.jpg", service: "art1", shape: "almond", length: "L", tags: ["French", "Strass"] },
-  { id: "ocean", name: "Océan Fleuri", img: "/gallery/g01.jpg", service: "art2", shape: "almond", length: "L", tags: ["Fleurs", "Bleu"] },
-  { id: "gold-chrome", name: "Gold Rush", img: "/gallery/g10.jpg", service: "art2", shape: "almond", length: "M", tags: ["Chrome", "Doré"] },
-  { id: "french-blanche", name: "French Classique", img: "/gallery/g11.jpg", service: "art1", shape: "coffin", length: "M", tags: ["French", "Intemporel"] },
-  { id: "pois-bordeaux", name: "Pois Bordeaux", img: "/gallery/g12.jpg", service: "art1", shape: "almond", length: "M", tags: ["Minimaliste"] },
-  { id: "noir-fleurs", name: "Black Petals", img: "/gallery/s1.jpg", service: "art2", shape: "square", length: "S", tags: ["French noire", "Fleurs"] },
+  { id: "pierre-precieuse", name: "Pierre Précieuse", img: "/gallery/p06.jpg", service: "art3", shape: "almond", length: "M", tags: ["Chrome", "Doré", "Best-seller"] },
+  { id: "french-doree", name: "French Dorée", img: "/gallery/p02.jpg", service: "art2", shape: "almond", length: "S", tags: ["French", "Chrome doré"] },
+  { id: "love-letter", name: "Love Letter", img: "/gallery/p07.jpg", service: "art2", shape: "square", length: "L", tags: ["Saint-Valentin", "Paillettes"] },
+  { id: "pois-bordeaux", name: "Pois Bordeaux", img: "/gallery/p04.jpg", service: "art1", shape: "square", length: "XS", tags: ["Minimaliste"] },
+  { id: "french-3d", name: "French Sculptée", img: "/gallery/p03.jpg", service: "art2", shape: "square", length: "S", tags: ["French", "Effet 3D"] },
+  { id: "nude-ballerine", name: "Nude Ballerine", img: "/gallery/p08.jpg", service: "rallongement", shape: "coffin", length: "L", tags: ["Nude", "Intemporel"] },
+  { id: "vert-pomme", name: "Vert Pomme", img: "/gallery/p05.jpg", service: "rallongement", shape: "square", length: "M", tags: ["Couleur unie", "Pop"] },
+  { id: "french-classique", name: "French Classique", img: "/gallery/p09.jpg", service: "art1", shape: "square", length: "S", tags: ["French", "Intemporel"] },
 ];
 
 // Boutique : cartes cadeaux et packs prépayés (crédit utilisable à chaque RDV)
